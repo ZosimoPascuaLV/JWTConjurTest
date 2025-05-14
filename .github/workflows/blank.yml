@@ -27,7 +27,7 @@ jobs:
         id: auth-token
         run: |
             export TOKEN=$(curl -sSL -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL")
-            export TOKEN=$( $TOKEN | jq .value )
+            export TOKEN=$( echo $TOKEN | jq .value )
             shortLivetoken=$(curl -k --request POST https://lvm-uat.secretsmgr.cyberark.cloud/api/authn-jwt/LVM-UAT-Github/conjur/host%2Fdata%2FJWT-demo/authenticate --header "Content-Type:application/x-www-form-urlencoded" --header "Accept-Encoding:base64" --data-urlencode "jwt=$TOKEN")
             echo $shortLiveToken
 
