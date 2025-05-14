@@ -27,4 +27,6 @@ jobs:
         id: auth-token
         run: |
             export TOKEN=$(curl -sSL -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL")
-            echo $TOKEN
+            sudo apt-get install jq
+            echo $TOKEN > test
+            cat test
