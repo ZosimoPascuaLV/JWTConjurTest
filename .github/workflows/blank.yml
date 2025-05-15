@@ -18,24 +18,21 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
+      - name: Install jq
+        run: sudo apt-get update && sudo apt-get install -y jq
+
       - name: Get JWT and Authenticate to Conjur Cloud
         id: auth-token
         run: |
-          # Retrieve JWT from GitHub Actions
-          TOKEN=$(curl -sSL -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL")
-          if [ $? -ne 0 ]; then
-            echo "Error retrieving initial JWT"
-            exit 1
-          fi
-
-          # Extract and print the header and payload (separately)
-          JWT_HEADER=$(echo "$TOKEN" | jq -r '.value | @base64d | split(".")[0] | @base64d')
-          JWT_PAYLOAD=$(echo "$TOKEN" | jq -r '.value | @base64d | split(".")[1] | @base64d')
+          # Extract and print the header and payload (separately) - NO INTERMEDIATE VARIABLE
+          JWT_HEADER=$(curl -sSL -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL" | jq -r '.value | @base64d | split(".")[0] | @base64d')
+          JWT_PAYLOAD=$(curl -sSL -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL" | jq -r '.value | @base64d | split(".")[1] | @base64d')
 
           echo "JWT Header: $JWT_HEADER"
           echo "JWT Payload: $JWT_PAYLOAD"
 
           # Authenticate to Conjur Cloud
+          TOKEN=$(curl -sSL -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL")
           CONJUR_AUTH_RESPONSE=$(curl -vvvk --request POST https://lvm-uat.secretsmgr.cyberark.cloud/api/authn-jwt/lvmtest/conjur/host%2Fdata%2Fjwtwork/authenticate --header "Content-Type:application/x-www-form-urlencoded" --data-urlencode jwt="$TOKEN")
           if [ $? -ne 0 ]; then
             echo "Error authenticating to Conjur Cloud"
