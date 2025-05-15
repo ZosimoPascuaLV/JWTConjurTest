@@ -33,4 +33,3 @@ jobs:
             echo $shortLiveToken
             export shortLiveToken=\"$shortLiveToken\"
             curl -vvvk --request GET https://lvm-uat.secretsmgr.cyberark.cloud/api/secrets/conjur/variable/data%2Fvault%2FTest_VCP%2FApplication-ConjurPass-conjurtestvar3%2Fpassword -H "Authorization:Token token=$shortLiveToken"
-
