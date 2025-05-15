@@ -22,7 +22,8 @@ jobs:
           token=$(echo "$TOKEN" | jq -r .value)
           export shortLivetoken=$(curl -vvvk --request POST https://lvm-uat.secretsmgr.cyberark.cloud/api/authn-jwt/lvmtest/conjur/host%2Fdata%2Fjwtwork/authenticate --header "Content-Type:application/x-www-form-urlencoded" --data-urlencode jwt="$token")
           echo "Conjur Auth Response: $shortLivetoken"
-          shortLiveToken=$(echo "$shortLivetoken" | jq -r .token)
+          # Extracting the token with the known field to get the value
+          shortLiveToken=$(echo "$shortLivetoken" | jq -r .payload)
           echo "Short Live Token: $shortLiveToken"
           export shortLiveToken="$shortLiveToken"
           # URL encode the secret identifier
