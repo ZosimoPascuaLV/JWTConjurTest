@@ -29,3 +29,4 @@ jobs:
           SECRET_URL="https://lvm-uat.secretsmgr.cyberark.cloud/api/secrets/conjur/variable/data%252Fvault%252FTest_VCP%252FApplication-ConjurPass-conjurtestvar3%252Fpassword"
           SECRET=$(curl -vvv --request GET "$SECRET_URL" -H "Authorization: Bearer $shortLiveToken" -H "Accept: application/json")
           echo "Secret: $SECRET"
+          echo "Status Code: $(echo $SECRET | head -n 1)"
