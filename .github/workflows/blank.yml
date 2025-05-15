@@ -18,41 +18,15 @@ jobs:
       - name: Get JWT
         id: auth-token
         run: |
-          # Step 1: Get the initial JWT token
           export TOKEN=$(curl -sSL -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL")
-          echo "JWT Token: $TOKEN"  # Debug: Print the JWT token
-
-          # Step 2: Extract the token value
           token=$(echo "$TOKEN" | jq -r .value)
-
-          # Step 3: Authenticate and get the short-lived token
           export shortLivetoken=$(curl -vvvk --request POST https://lvm-uat.secretsmgr.cyberark.cloud/api/authn-jwt/lvmtest/conjur/host%2Fdata%2Fjwtwork/authenticate --header "Content-Type:application/x-www-form-urlencoded" --data-urlencode jwt="$token")
-          echo "Conjur Auth Response: $shortLivetoken"  # Debug: Print the response from authentication
-
-          # Step 4: Extract the short-lived token
+          echo "Conjur Auth Response: $shortLivetoken"
           shortLiveToken=$(echo "$shortLivetoken" | jq -r .payload)
-          echo "Short Live Token: $shortLiveToken"  # Debug: Print the short-lived token
-
-          # Step 5: Check if the short-lived token is empty
-          if [ -z "$shortLiveToken" ]; then
-            echo "Error: Short Live Token is empty."
-            exit 1
-          fi
-
-          # Step 6: Define the secret URL
+          echo "Short Live Token: $shortLiveToken"
+          export shortLiveToken="$shortLiveToken"
+          # URL encode the secret identifier
           SECRET_URL="https://lvm-uat.secretsmgr.cyberark.cloud/api/secrets/conjur/variable/data%252Fvault%252FTest_VCP%252FApplication-ConjurPass-conjurtestvar3%252Fpassword"
-
-          # Step 7: Retrieve the secret
           SECRET=$(curl -vvv --request GET "$SECRET_URL" -H "Authorization: Bearer $shortLiveToken" -H "Accept: application/json")
-
-          # Step 8: Check the HTTP response status
-          HTTP_STATUS=$(curl -o /dev/null -s -w "%{http_code}\n" "$SECRET_URL" -H "Authorization: Bearer $shortLiveToken" -H "Accept: application/json")
-          echo "HTTP Status Code: $HTTP_STATUS"  # Debug: Print the HTTP status code
-
-          if [ "$HTTP_STATUS" -ne 200 ]; then
-            echo "Failed to retrieve secret. HTTP Status: $HTTP_STATUS"
-            exit 1
-          fi
-
-          # Step 9: Print the retrieved secret
           echo "Secret: $SECRET"
+          echo "Status Code: $(echo $SECRET | head -n 1)"
