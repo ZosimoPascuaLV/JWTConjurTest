@@ -1,21 +1,13 @@
-# This is a basic workflow to help you get started with Actions
-
 name: CI
 
-# Controls when the workflow will run
 on:
-  # Triggers the workflow on push or pull request events but only for the "main" branch
   push:
     branches: [ "main" ]
   pull_request:
     branches: [ "main" ]
-
-  # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
 
-# A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
-  # This workflow contains a single job called "build"
   token-job:
     permissions:
       contents: 'read'
@@ -23,25 +15,43 @@ jobs:
     runs-on: ubuntu-latest
     name: Run Step 1
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
       - name: Get JWT
         id: auth-token
         run: |
-        # Retrieve JWT (ensure ACTIONS_ID_TOKEN_REQUEST_TOKEN and ACTIONS_ID_TOKEN_REQUEST_URL are set)
-        TOKEN=$(curl -sSL -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL")
-        if [ $? -ne 0 ]; then
-        echo "Error retrieving initial JWT"
-        exit 1
-        fi
-        # Extract the 'value' and base64 encode (if needed)
-        TOKEN_VALUE_BASE64=$(echo "$TOKEN" | jq .value | base64) # Uncomment if base64 encoding is required
-        # Get short-lived token
-        shortLiveToken=$(curl -vvvk --request POST https://lvm-uat.secretsmgr.cyberark.cloud/api/authn-jwt/lvmtest/conjur/host%2Fdata%2Fjwtwork/authenticate --header "Content-Type:application/x-www-form-urlencoded" --data-urlencode jwt="$TOKEN")
-        if [ $? -ne 0 ]; then
-        echo "Error retrieving short-lived token"
-        exit 1
-        fi
-        # echo "Short-lived token: $shortLiveToken" # REMOVE THIS FOR SECURITY
-        echo "Short-lived token retrieved successfully (value masked)"
-        export shortLiveToken="$shortLiveToken"
-        # Retrieve secret (double-check the Authorization header format)
-        curl -vvvk --request GET https://lvm-uat.secretsmgr.cyberark.cloud/api/secrets/conjur/variable/data%2Fvault%2FTest_VCP%2FApplication-ConjurPass-conjurtestvar3%2Fpassword -H "Authorization: Token token=$shortLiveToken" # Or use "Authorization: Bearer $shortLiveToken"
+          # Retrieve JWT from GitHub Actions
+          TOKEN=$(curl -sSL -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL")
+          if [ $? -ne 0 ]; then
+            echo "Error retrieving initial JWT"
+            exit 1
+          fi
+
+          # Get short-lived token from CyberArk
+          shortLiveToken=$(curl -vvvk --request POST https://lvm-uat.secretsmgr.cyberark.cloud/api/authn-jwt/lvmtest/conjur/host%2Fdata%2Fjwtwork/authenticate --header "Content-Type:application/x-www-form-urlencoded" --data-urlencode jwt="$TOKEN")
+          if [ $? -ne 0 ]; then
+            echo "Error retrieving short-lived token"
+            exit 1
+          fi
+
+          export shortLiveToken="$shortLiveToken"
+
+          # Retrieve secret from CyberArk
+          SECRET=$(curl -vvvk --request GET https://lvm-uat.secretsmgr.cyberark.cloud/api/secrets/conjur/variable/data%2Fvault%2FTest_VCP%2FApplication-ConjurPass-conjurtestvar3%2Fpassword -H "Authorization: Bearer $shortLiveToken")
+          if [ $? -ne 0 ]; then
+            echo "Error retrieving secret"
+            exit 1
+          fi
+
+          # Mask the secret in the output
+          echo "::add-mask::$SECRET"
+
+          # Use the secret (example: write to a file - be very careful with this!)
+          echo "$SECRET" > secret.txt
+          echo "Secret written to secret.txt (but is masked in output)"
+      
+      - name: Example usage of secret file
+        run: |
+          # Example of how to use the secret after retrieving it
+          cat secret.txt
