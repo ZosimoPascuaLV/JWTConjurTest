@@ -1,13 +1,21 @@
+# This is a basic workflow to help you get started with Actions
+
 name: CI
 
+# Controls when the workflow will run
 on:
+  # Triggers the workflow on push or pull request events but only for the "main" branch
   push:
     branches: [ "main" ]
   pull_request:
     branches: [ "main" ]
+
+  # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
 
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
+  # This workflow contains a single job called "build"
   token-job:
     permissions:
       contents: 'read'
@@ -15,40 +23,13 @@ jobs:
     runs-on: ubuntu-latest
     name: Run Step 1
     steps:
-      - name: Get JWT and Authenticate to Conjur Cloud
+      - name: Get JWT
         id: auth-token
         run: |
-          # Retrieve JWT from GitHub Actions
-          export TOKEN=$(curl -sSL -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL")
-          token=$(echo "$TOKEN" | jq -r .value)
-          echo "JWT : $token"
-
-          # Authenticate to Conjur Cloud
-          export shortLivetoken=$(curl -vvvk --request POST https://lvm-uat.secretsmgr.cyberark.cloud/api/authn-jwt/lvmtest/conjur/host%2Fdata%2Fjwtwork/authenticate --header "Content-Type:application/x-www-form-urlencoded" --data-urlencode jwt="$token")
-          echo "Conjur Auth Response: $shortLivetoken"
-          shortLiveToken=$(echo "$shortLivetoken" | jq -r .payload)
-          echo "Short Live Token: $shortLiveToken"
-          export shortLiveToken="$shortLiveToken"
-
-          # Correctly URL encode the secret identifier
-          SECRET_URL="https://lvm-uat.secretsmgr.cyberark.cloud/api/secrets/conjur/variable/data%2Fvault%2FTest_VCP%2FApplication-ConjurPass-conjurtestvar3%2Fpassword"
-
-          # Capture the request headers and response
-          SECRET=$(curl -vvv -X GET "$SECRET_URL" \
-            -H "Authorization: Bearer $shortLiveToken" \
-            -H "Accept: application/json" 2>&1)
-
-          echo "Full Request and Response:"
-          echo "$SECRET"
-
-          # Extract the status code (if possible)
-          STATUS_CODE=$(echo "$SECRET" | grep '< HTTP' | awk '{print $2}')
-          echo "HTTP Status Code: $STATUS_CODE"
-
-          # Extract the secret (if successful)
-          if [[ "$STATUS_CODE" == "200" ]]; then
-            SECRET_VALUE=$(echo "$SECRET" | jq -r '.value')
-            echo "Secret Value: $SECRET_VALUE"
-          else
-            echo "Secret retrieval failed."
-          fi
+            export TOKEN=$(curl -sSL -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL")
+            echo $TOKEN | jq .value | base64
+            token="eyJhbGciOiJSUzI1NiIsImtpZCI6IjM4ODI2YjE3LTZhMzAtNWY5Yi1iMTY5LThiZWI4MjAyZjcyMyIsInR5cCI6IkpXVCIsIng1dCI6InlrTmFZNHFNX3RhNGsyVGdaT0NFWUxrY1lsQSJ9.eyJhY3RvciI6Ilpvc2ltb1Bhc2N1YUxWIiwiYWN0b3JfaWQiOiIxMjk4MjE2OTIiLCJhdWQiOiJodHRwczovL2dpdGh1Yi5jb20vWm9zaW1vUGFzY3VhTFYiLCJiYXNlX3JlZiI6IiIsImV2ZW50X25hbWUiOiJwdXNoIiwiZXhwIjoxNzQ3Mjk4OTA3LCJoZWFkX3JlZiI6IiIsImlhdCI6MTc0NzI3NzMwNywiaXNzIjoiaHR0cHM6Ly90b2tlbi5hY3Rpb25zLmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImpvYl93b3JrZmxvd19yZWYiOiJab3NpbW9QYXNjdWFMVi9KV1RDb25qdXJUZXN0Ly5naXRodWIvd29ya2Zsb3dzL2JsYW5rLnltbEByZWZzL2hlYWRzL21haW4iLCJqb2Jfd29ya2Zsb3dfc2hhIjoiODhhNzk2YzQ5MmZjM2JiYTRhZjYwOWJjMjJmMzNjNTAzZTlkODk2NCIsImp0aSI6IjJiY2U0ZWI0LTkyNmQtNGU1Yi04MmQ0LWE3NjI4M2NmMmE0NiIsIm5iZiI6MTc0NzI3NzAwNywicmVmIjoicmVmcy9oZWFkcy9tYWluIiwicmVmX3Byb3RlY3RlZCI6ImZhbHNlIiwicmVmX3R5cGUiOiJicmFuY2giLCJyZXBvc2l0b3J5IjoiWm9zaW1vUGFzY3VhTFYvSldUQ29uanVyVGVzdCIsInJlcG9zaXRvcnlfaWQiOiI5ODMzMjY1MTYiLCJyZXBvc2l0b3J5X293bmVyIjoiWm9zaW1vUGFzY3VhTFYiLCJyZXBvc2l0b3J5X293bmVyX2lkIjoiMTI5ODIxNjkyIiwicmVwb3NpdG9yeV92aXNpYmlsaXR5IjoicHVibGljIiwicnVuX2F0dGVtcHQiOiIxIiwicnVuX2lkIjoiMTUwMzU0ODQ4ODIiLCJydW5fbnVtYmVyIjoiMjkiLCJydW5uZXJfZW52aXJvbm1lbnQiOiJnaXRodWItaG9zdGVkIiwic2hhIjoiODhhNzk2YzQ5MmZjM2JiYTRhZjYwOWJjMjJmMzNjNTAzZTlkODk2NCIsInN1YiI6InJlcG86Wm9zaW1vUGFzY3VhTFYvSldUQ29uanVyVGVzdDpyZWY6cmVmcy9oZWFkcy9tYWluIiwid29ya2Zsb3ciOiJDSSIsIndvcmtmbG93X3JlZiI6Ilpvc2ltb1Bhc2N1YUxWL0pXVENvbmp1clRlc3QvLmdpdGh1Yi93b3JrZmxvd3MvYmxhbmsueW1sQHJlZnMvaGVhZHMvbWFpbiIsIndvcmtmbG93X3NoYSI6Ijg4YTc5NmM0OTJmYzNiYmE0YWY2MDliYzIyZjMzYzUwM2U5ZDg5NjQifQ.G4YIxM_2jlOH0xfhl2Gwke2u2EqNnvNQU7J7VX36dK_iv1LGCq1N6bCrP1DPHOP_i86BG_kIC_8envEz4SkiUMQ7Bv4aMlu6V28h0DUhyaZu5seFJ5u3twGF3FwBnWlu1e5vfG8V9BH5fPsH6oqLJHgRqqchdIBdipY6xK2_YWy-ZDMzikdfUVcLbTjbdmG3jv33_PDgu23mb2L6a2muCCfB5t81gRTFdgtLhX2zFJcuuq-4xmRxbQTAqqXKKh1QVBREqIe4VncY1eXeSL2ML5fY-PQssmpmjQjD81tKXImfOn-F7t81ERm4bbw8g8qlyoP-l-CUGOuMGrEvET2ZCw"
+            export shortLivetoken=$(curl -vvvk --request POST https://lvm-uat.secretsmgr.cyberark.cloud/api/authn-jwt/lvmtest/conjur/host%2Fdata%2Fjwtwork/authenticate --header "Content-Type:application/x-www-form-urlencoded" --header "Accept-Encoding:base64" --data-urlencode jwt=$token)
+            echo $shortLiveToken
+            export shortLiveToken=\"$shortLiveToken\"
+            curl -vvvk --request GET https://lvm-uat.secretsmgr.cyberark.cloud/api/secrets/conjur/variable/data%2Fvault%2FTest_VCP%2FApplication-ConjurPass-conjurtestvar3%2Fpassword -H "Authorization:Token token=$shortLiveToken"
