@@ -1,21 +1,13 @@
-# This is a basic workflow to help you get started with Actions
-
 name: CI
 
-# Controls when the workflow will run
 on:
-  # Triggers the workflow on push or pull request events but only for the "main" branch
   push:
     branches: [ "main" ]
   pull_request:
     branches: [ "main" ]
-
-  # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
 
-# A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
-  # This workflow contains a single job called "build"
   token-job:
     permissions:
       contents: 'read'
@@ -23,13 +15,41 @@ jobs:
     runs-on: ubuntu-latest
     name: Run Step 1
     steps:
-      - name: Get JWT
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Get JWT and Authenticate to Conjur Cloud
         id: auth-token
         run: |
-            export TOKEN=$(curl -sSL -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL")
-            token=$(echo $TOKEN | jq .value | base64)
-            
-            export shortLivetoken=$(curl -vvvk --request POST https://lvm-uat.secretsmgr.cyberark.cloud/api/authn-jwt/lvmtest/conjur/host%2Fdata%2Fjwtwork/authenticate --header "Content-Type:application/x-www-form-urlencoded" --header "Accept-Encoding:base64" --data-urlencode jwt=$token)
-            echo $shortLiveToken
-            export shortLiveToken="$shortLiveToken"
-            curl -vvvk --request GET https://lvm-uat.secretsmgr.cyberark.cloud/api/secrets/conjur/variable/data%2Fvault%2FTest_VCP%2FApplication-ConjurPass-conjurtestvar3%2Fpassword -H "Authorization:Token token=$shortLiveToken"
+          # Retrieve JWT from GitHub Actions
+          TOKEN=$(curl -sSL -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL")
+          if [ $? -ne 0 ]; then
+            echo "Error retrieving initial JWT"
+            exit 1
+          fi
+
+          # Authenticate to Conjur Cloud
+          CONJUR_AUTH_RESPONSE=$(curl -vvvk --request POST https://lvm-uat.secretsmgr.cyberark.cloud/api/authn-jwt/lvmtest/conjur/host%2Fdata%2Fjwtwork/authenticate --header "Content-Type:application/x-www-form-urlencoded" --data-urlencode jwt="$TOKEN")
+          if [ $? -ne 0 ]; then
+            echo "Error authenticating to Conjur Cloud"
+            exit 1
+          fi
+
+          # Parse the Conjur Cloud response (assuming it's JSON)
+          shortLiveToken=$(echo "$CONJUR_AUTH_RESPONSE" | jq -r '.token') # Adjust '.token' if the token is in a different field
+          echo "Conjur Auth Response: $CONJUR_AUTH_RESPONSE" # Print the entire response for debugging
+          echo "Short-lived Conjur token: $shortLiveToken"
+
+          export shortLiveToken="$shortLiveToken"
+
+          # Retrieve secret from Conjur Cloud
+          SECRET=$(curl -vvvk --request GET https://lvm-uat.secretsmgr.cyberark.cloud/api/secrets/conjur/variable/data%2Fvault%2FTest_VCP%2FApplication-ConjurPass-conjurtestvar3%2Fpassword -H "Authorization: Bearer $shortLiveToken") # DOUBLE CHECK THIS HEADER
+          if [ $? -ne 0 ]; then
+            echo "Error retrieving secret"
+            echo "Check the Authorization header format and the shortLiveToken value."
+            exit 1
+          fi
+
+          echo "::add-mask::$SECRET"
+          echo "$SECRET" > secret.txt
+          echo "Secret written to secret.txt (but is masked in output)"
