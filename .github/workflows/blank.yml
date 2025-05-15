@@ -25,4 +25,7 @@ jobs:
           shortLiveToken=$(echo "$shortLivetoken" | jq -r .token)
           echo "Short Live Token: $shortLiveToken"
           export shortLiveToken="$shortLiveToken"
-          SECRET=$(curl -vvvk --request GET https://lvm-uat.secretsmgr.cyberark.cloud/api/secrets/conjur/variable/data%252Fvault%252FTest_VCP%252FApplication-ConjurPass-conjurtestvar3%252Fpassword -H "Authorization: Bearer $shortLiveToken")
+          # URL encode the secret identifier
+          SECRET_URL="https://lvm-uat.secretsmgr.cyberark.cloud/api/secrets/conjur/variable/data%252Fvault%252FTest_VCP%252FApplication-ConjurPass-conjurtestvar3%252Fpassword"
+          SECRET=$(curl -vvv --request GET "$SECRET_URL" -H "Authorization: Bearer \"$shortLiveToken\"" -H "Accept: application/json")
+          echo "Secret: $SECRET"
