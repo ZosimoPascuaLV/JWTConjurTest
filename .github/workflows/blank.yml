@@ -28,6 +28,10 @@ jobs:
             exit 1
           fi
 
+          # Print the JWT for debugging (mask the value!)
+          echo "GitHub Actions JWT: $TOKEN"
+          echo "::add-mask::$TOKEN"
+
           # Authenticate to Conjur Cloud
           CONJUR_AUTH_RESPONSE=$(curl -vvvk --request POST https://lvm-uat.secretsmgr.cyberark.cloud/api/authn-jwt/lvmtest/conjur/host%2Fdata%2Fjwtwork/authenticate --header "Content-Type:application/x-www-form-urlencoded" --data-urlencode jwt="$TOKEN")
           if [ $? -ne 0 ]; then
