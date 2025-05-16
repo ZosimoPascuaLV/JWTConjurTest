@@ -26,10 +26,13 @@ jobs:
       - name: Get JWT
         id: auth-token
         run: |
-            export TOKEN=$(curl -sSL -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL")
-            echo $TOKEN | jq .value | base64
-            token="eyJhbGciOiJSUzI1NiIsImtpZCI6IjM4ODI2YjE3LTZhMzAtNWY5Yi1iMTY5LThiZWI4MjAyZjcyMyIsInR5cCI6IkpXVCIsIng1dCI6InlrTmFZNHFNX3RhNGsyVGdaT0NFWUxrY1lsQSJ9.eyJhY3RvciI6Ilpvc2ltb1Bhc2N1YUxWIiwiYWN0b3JfaWQiOiIxMjk4MjE2OTIiLCJhdWQiOiJodHRwczovL2dpdGh1Yi5jb20vWm9zaW1vUGFzY3VhTFYiLCJiYXNlX3JlZiI6IiIsImV2ZW50X25hbWUiOiJwdXNoIiwiZXhwIjoxNzQ3Mjk4OTA3LCJoZWFkX3JlZiI6IiIsImlhdCI6MTc0NzI3NzMwNywiaXNzIjoiaHR0cHM6Ly90b2tlbi5hY3Rpb25zLmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImpvYl93b3JrZmxvd19yZWYiOiJab3NpbW9QYXNjdWFMVi9KV1RDb25qdXJUZXN0Ly5naXRodWIvd29ya2Zsb3dzL2JsYW5rLnltbEByZWZzL2hlYWRzL21haW4iLCJqb2Jfd29ya2Zsb3dfc2hhIjoiODhhNzk2YzQ5MmZjM2JiYTRhZjYwOWJjMjJmMzNjNTAzZTlkODk2NCIsImp0aSI6IjJiY2U0ZWI0LTkyNmQtNGU1Yi04MmQ0LWE3NjI4M2NmMmE0NiIsIm5iZiI6MTc0NzI3NzAwNywicmVmIjoicmVmcy9oZWFkcy9tYWluIiwicmVmX3Byb3RlY3RlZCI6ImZhbHNlIiwicmVmX3R5cGUiOiJicmFuY2giLCJyZXBvc2l0b3J5IjoiWm9zaW1vUGFzY3VhTFYvSldUQ29uanVyVGVzdCIsInJlcG9zaXRvcnlfaWQiOiI5ODMzMjY1MTYiLCJyZXBvc2l0b3J5X293bmVyIjoiWm9zaW1vUGFzY3VhTFYiLCJyZXBvc2l0b3J5X293bmVyX2lkIjoiMTI5ODIxNjkyIiwicmVwb3NpdG9yeV92aXNpYmlsaXR5IjoicHVibGljIiwicnVuX2F0dGVtcHQiOiIxIiwicnVuX2lkIjoiMTUwMzU0ODQ4ODIiLCJydW5fbnVtYmVyIjoiMjkiLCJydW5uZXJfZW52aXJvbm1lbnQiOiJnaXRodWItaG9zdGVkIiwic2hhIjoiODhhNzk2YzQ5MmZjM2JiYTRhZjYwOWJjMjJmMzNjNTAzZTlkODk2NCIsInN1YiI6InJlcG86Wm9zaW1vUGFzY3VhTFYvSldUQ29uanVyVGVzdDpyZWY6cmVmcy9oZWFkcy9tYWluIiwid29ya2Zsb3ciOiJDSSIsIndvcmtmbG93X3JlZiI6Ilpvc2ltb1Bhc2N1YUxWL0pXVENvbmp1clRlc3QvLmdpdGh1Yi93b3JrZmxvd3MvYmxhbmsueW1sQHJlZnMvaGVhZHMvbWFpbiIsIndvcmtmbG93X3NoYSI6Ijg4YTc5NmM0OTJmYzNiYmE0YWY2MDliYzIyZjMzYzUwM2U5ZDg5NjQifQ.G4YIxM_2jlOH0xfhl2Gwke2u2EqNnvNQU7J7VX36dK_iv1LGCq1N6bCrP1DPHOP_i86BG_kIC_8envEz4SkiUMQ7Bv4aMlu6V28h0DUhyaZu5seFJ5u3twGF3FwBnWlu1e5vfG8V9BH5fPsH6oqLJHgRqqchdIBdipY6xK2_YWy-ZDMzikdfUVcLbTjbdmG3jv33_PDgu23mb2L6a2muCCfB5t81gRTFdgtLhX2zFJcuuq-4xmRxbQTAqqXKKh1QVBREqIe4VncY1eXeSL2ML5fY-PQssmpmjQjD81tKXImfOn-F7t81ERm4bbw8g8qlyoP-l-CUGOuMGrEvET2ZCw"
-            export shortLivetoken=$(curl -vvvk --request POST https://lvm-uat.secretsmgr.cyberark.cloud/api/authn-jwt/lvmtest/conjur/host%2Fdata%2Fjwtwork/authenticate --header "Content-Type:application/x-www-form-urlencoded" --header "Accept-Encoding:base64" --data-urlencode jwt=$token)
-            echo $shortLiveToken
-            export shortLiveToken=\"$shortLiveToken\"
-            curl -vvvk --request GET https://lvm-uat.secretsmgr.cyberark.cloud/api/secrets/conjur/variable/data%2Fvault%2FTest_VCP%2FApplication-ConjurPass-conjurtestvar3%2Fpassword -H "Authorization:Token token=$shortLiveToken"
+         echo "TOKEN=$(curl -sSL -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL" | jq .value)" >> $GITHUB_ENV
+          echo "JWT Token acquired."
+
+      - name: Authenticate with API
+        id: api-auth
+        run: |
+            echo "Received token: $TOKEN"
+            export SHORT_LIVE_TOKEN=\"$(curl -k --request POST "https://lvm-uat.secretsmgr.cyberark.cloud/api/authn-jwt/lvmtest/conjur/host%2Fdata%2Fjwtwork/authenticate " --header "Content-Type: application/x-www-form-urlencoded" --header "Accept-Encoding: base64" --data-urlencode jwt="${{ env.TOKEN }}")\"
+            echo "Authentication request sent."
+            curl -vvvk --request GET https://lvm-uat.secretsmgr.cyberark.cloud/api/secrets/conjur/variable/data%2Fvault%2FTest_VCP%2FApplication-ConjurPass-conjurtestvar3%2Fpassword -H "Authorization:Token token=$SHORT_LIVE_TOKEN"
