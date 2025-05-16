@@ -13,26 +13,24 @@ on:
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
 
-# A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
-  # This workflow contains a single job called "build"
   token-job:
     permissions:
       contents: 'read'
       id-token: 'write'
     runs-on: ubuntu-latest
-    name: Run Step 1
+    name: Obtain and Use JWT
     steps:
       - name: Get JWT
         id: auth-token
         run: |
-         echo "TOKEN=$(curl -sSL -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL" | jq .value)" >> $GITHUB_ENV
+          echo "TOKEN=$(curl -sSL -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL" | jq .value)" >> $GITHUB_ENV
           echo "JWT Token acquired."
 
       - name: Authenticate with API
         id: api-auth
         run: |
-            echo "Received token: $TOKEN"
-            export SHORT_LIVE_TOKEN=\"$(curl -k --request POST "https://lvm-uat.secretsmgr.cyberark.cloud/api/authn-jwt/lvmtest/conjur/host%2Fdata%2Fjwtwork/authenticate " --header "Content-Type: application/x-www-form-urlencoded" --header "Accept-Encoding: base64" --data-urlencode jwt="${{ env.TOKEN }}")\"
-            echo "Authentication request sent."
-            curl -vvvk --request GET https://lvm-uat.secretsmgr.cyberark.cloud/api/secrets/conjur/variable/data%2Fvault%2FTest_VCP%2FApplication-ConjurPass-conjurtestvar3%2Fpassword -H "Authorization:Token token=$SHORT_LIVE_TOKEN"
+          echo "Received token: $TOKEN"
+          export SHORT_LIVE_TOKEN=\"$(curl -vvvk --request POST "https://lvm-uat.secretsmgr.cyberark.cloud/api/authn-jwt/lvmtest/conjur/host%2Fdata%2Fjwtwork/authenticate " --header "Content-Type: application/x-www-form-urlencoded" --header "Accept-Encoding: base64" --data-urlencode jwt="${{ env.TOKEN }}")\"
+          echo "Authentication request sent."
+          curl -vvvk --request GET https://lvm-uat.secretsmgr.cyberark.cloud/api/secrets/conjur/variable/data%2Fvault%2FTest_VCP%2FApplication-ConjurPass-conjurtestvar3%2Fpassword -H "Authorization:Token token=$SHORT_LIVE_TOKEN"
