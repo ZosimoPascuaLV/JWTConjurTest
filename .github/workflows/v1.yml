@@ -33,12 +33,9 @@ jobs:
           # Correctly URL encode the secret identifier
           SECRET_URL="https://lvm-uat.secretsmgr.cyberark.cloud/api/secrets/conjur/variable/data%2Fvault%2FTest_VCP%2FApplication-ConjurPass-conjurtestvar3%2Fpassword"
 
-          # Construct the Authorization header
-          AUTH_HEADER="Authorization: Bearer $shortLiveToken"
-
           # Capture the request headers and response
           SECRET=$(curl -vvv -X GET "$SECRET_URL" \
-            -H "$AUTH_HEADER" \
+            -H "Authorization: Bearer $shortLiveToken" \
             -H "Accept: application/json" 2>&1)
 
           echo "Full Request and Response:"
