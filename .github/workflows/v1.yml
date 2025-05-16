@@ -33,21 +33,24 @@ jobs:
           # Correctly URL encode the secret identifier
           SECRET_URL="https://lvm-uat.secretsmgr.cyberark.cloud/api/secrets/conjur/variable/data%2Fvault%2FTest_VCP%2FApplication-ConjurPass-conjurtestvar3%2Fpassword"
 
+          # Construct the Authorization header
+          AUTH_HEADER="Authorization: Bearer $shortLiveToken"
+
           # Capture the request headers and response
           SECRET=$(curl -vvv -X GET "$SECRET_URL" \
-            -H "Authorization: Bearer  ${shortLiveToken}" \
+            -H "$AUTH_HEADER" \
             -H "Accept: application/json" 2>&1)
 
           echo "Full Request and Response:"
           echo "$SECRET"
 
           # Extract the status code (if possible)
-          STATUS_CODE=$(echo "$SECRET" | grep '< HTTP' | awk '{print $2}')
+          STATUS_CODE=$(echo "$SECRET" | grep "< HTTP" | awk '{print $2}')
           echo "HTTP Status Code: $STATUS_CODE"
 
           # Extract the secret (if successful)
           if [[ "$STATUS_CODE" == "200" ]]; then
-            SECRET_VALUE=$(echo "$SECRET" | jq -r '.value')
+            SECRET_VALUE=$(echo "$SECRET" | jq -r '.value') # Adjust '.value' if the response is different
             echo "Secret Value: $SECRET_VALUE"
           else
             echo "Secret retrieval failed."
